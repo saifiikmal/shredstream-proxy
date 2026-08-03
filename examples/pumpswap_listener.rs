@@ -11,6 +11,7 @@ fn trade_type_str(v: i32) -> &'static str {
     match v {
         x if x == TradeType::PumpSwapBuy as i32 => "BUY_PS",
         x if x == TradeType::PumpSwapSell as i32 => "SELL_PS",
+        x if x == TradeType::PumpSwapBuyExactIn as i32 => "BUY_EXACT_PS",
         x if x == TradeType::PumpSwapCreatePool as i32 => "CREATE_POOL_PS",
         x if x == TradeType::PumpSwapCreate as i32 => "CREATE_TOKEN_PS",
         x if x == TradeType::PumpfunBuy as i32 => "BUY_PF",
