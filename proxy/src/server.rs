@@ -286,12 +286,18 @@ fn convert_to_proto(tx: &ParsedTransaction, slot: u64) -> PbParsedTransaction {
         TradeType::AxiomBuy => ProtoTradeType::AxiomBuy as i32,
         TradeType::AxiomSell => ProtoTradeType::AxiomSell as i32,
         TradeType::PumpfunCreate => ProtoTradeType::PumpfunCreate as i32,
+        TradeType::PumpSwapBuy => ProtoTradeType::PumpSwapBuy as i32,
+        TradeType::PumpSwapSell => ProtoTradeType::PumpSwapSell as i32,
+        TradeType::PumpSwapCreatePool => ProtoTradeType::PumpSwapCreatePool as i32,
+        TradeType::PumpSwapBuyExactIn => ProtoTradeType::PumpSwapBuyExactIn as i32,
+        TradeType::PumpSwapCreate => ProtoTradeType::PumpSwapCreate as i32,
     };
 
     let origin = match tx.origin {
         Origin::Unspecified => ProtoOrigin::Unspecified as i32,
         Origin::Pumpfun => ProtoOrigin::Pumpfun as i32,
         Origin::Axiom => ProtoOrigin::Axiom as i32,
+        Origin::PumpSwap => ProtoOrigin::PumpSwap as i32,
     };
 
     PbParsedTransaction {
@@ -304,5 +310,6 @@ fn convert_to_proto(tx: &ParsedTransaction, slot: u64) -> PbParsedTransaction {
         token_amount: tx.token_amount,
         sol_amount: tx.sol_amount,
         timestamp: tx.timestamp,
+        pool: tx.pool.clone().unwrap_or_default(),
     }
 }

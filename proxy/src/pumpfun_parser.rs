@@ -3,6 +3,7 @@ use solana_entry::entry::Entry;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::transaction::VersionedTransaction;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::{Arc, LazyLock, RwLock};
 
 const PUMP_BUY_DISCRIMINATOR: [u8; 8] = [102, 6, 61, 18, 1, 218, 235, 234];
@@ -10,6 +11,10 @@ const PUMP_SELL_DISCRIMINATOR: [u8; 8] = [51, 230, 133, 164, 1, 127, 131, 173];
 const PUMP_EXACT_IN_DISCRIMINATOR: [u8; 8] = [56, 252, 116, 8, 158, 223, 205, 95];
 const PUMP_CREATE_V2_DISCRIMINATOR: [u8; 8] = [214, 144, 76, 236, 95, 139, 49, 180];
 const PUMP_CREATE_DISCRIMINATOR: [u8; 8] = [24, 30, 200, 40, 5, 28, 7, 119];
+const PUMP_SWAP_BUY_EXACT_QUOTE_IN_DISCRIMINATOR: [u8; 8] = [198, 46, 21, 82, 180, 217, 232, 112];
+const PUMP_SWAP_CREATE_POOL_DISCRIMINATOR: [u8; 8] = [233, 146, 209, 142, 207, 104, 64, 188];
+const PUMP_SWAP_DEPOSIT_DISCRIMINATOR: [u8; 8] = [242, 35, 198, 137, 82, 225, 242, 182];
+const PUMP_SWAP_WITHDRAW_DISCRIMINATOR: [u8; 8] = [183, 18, 70, 156, 148, 109, 161, 34];
 const PUMP_EXACT_QUOTE_IN_DISCRIMINATOR: [u8; 8] = [194, 171, 28, 70, 104, 77, 91, 47];
 const PUMP_BUY_V2_DISCRIMINATOR: [u8; 8] = [184, 23, 238, 97, 103, 197, 211, 61];
 const PUMP_SELL_V2_DISCRIMINATOR: [u8; 8] = [93, 246, 130, 60, 231, 233, 64, 178];
@@ -20,6 +25,7 @@ const TERMINAL_SELL_DISCRIMINATOR: [u8; 8] =
     [154, 231, 130, 238, 7, 46, 19, 115];
 
 const PUMPFUN_PROGRAM_ID_STR: &str = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
+const PUMP_SWAP_PROGRAM_ID_STR: &str = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA";
 const AXIOM_PROGRAM_ID_STR: &str = "FLASHX8DrLbgeR8FcfNV1F5krxYcYMUdBkrP1EPBtxB9";
 const AXIOM_ALT_STR: &str = "7RKtfATWCe98ChuwecNq8XCzAzfoK3DtZTprFsPMGtio";
 const TOKEN_PROGRAM_ID_STR: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
@@ -29,6 +35,8 @@ const TERMINAL_PROGRAM_ID_STR: &str = "term9YPb9mzAsABaqN71A4xdbxHmpBNZavpBiQKZz
 
 pub static PUMPFUN_PROGRAM_ID: LazyLock<Pubkey> =
     LazyLock::new(|| PUMPFUN_PROGRAM_ID_STR.parse().unwrap());
+pub static PUMP_SWAP_PROGRAM_ID: LazyLock<Pubkey> =
+    LazyLock::new(|| PUMP_SWAP_PROGRAM_ID_STR.parse().unwrap());
 pub static AXIOM_PROGRAM_ID: LazyLock<Pubkey> =
     LazyLock::new(|| AXIOM_PROGRAM_ID_STR.parse().unwrap());
 pub static TOKEN_PROGRAM_ID: LazyLock<Pubkey> =
@@ -128,6 +136,11 @@ pub enum TradeType {
     AxiomBuy = 4,
     AxiomSell = 5,
     PumpfunCreate = 6,
+    PumpSwapBuy = 9,
+    PumpSwapSell = 10,
+    PumpSwapCreatePool = 11,
+    PumpSwapBuyExactIn = 12,
+    PumpSwapCreate = 13,
 }
 
 impl From<TradeType> for i32 {
@@ -141,6 +154,7 @@ pub enum Origin {
     Unspecified = 0,
     Pumpfun = 1,
     Axiom = 2,
+    PumpSwap = 3,
 }
 
 impl From<Origin> for i32 {
@@ -160,6 +174,7 @@ pub struct ParsedTransaction {
     pub token_amount: u64,
     pub sol_amount: u64,
     pub timestamp: u64,
+    pub pool: Option<String>,
 }
 
 pub struct PumpFunParser;
@@ -221,7 +236,7 @@ impl PumpFunParser {
             let data = &instruction.data;
 
             if *program_id == *PUMPFUN_PROGRAM_ID {
-                if filter == "axiom" {
+                if filter == "axiom" || filter == "pumpswap" || filter == "pumpswap_new" {
                     continue;
                 }
 
@@ -244,6 +259,7 @@ impl PumpFunParser {
                             token_amount,
                             sol_amount,
                             timestamp: 0,
+                            pool: None,
                         });
                     } else {
                         if filter == "pumpfun_new" {
@@ -263,6 +279,7 @@ impl PumpFunParser {
                             token_amount,
                             sol_amount,
                             timestamp: 0,
+                            pool: None,
                         });
                     }
                     
@@ -270,7 +287,7 @@ impl PumpFunParser {
             }
 
             if *program_id == *GMGN_PROGRAM_ID {
-                if filter == "axiom" {
+                if filter == "axiom" || filter == "pumpswap" || filter == "pumpswap_new" {
                     continue;
                 }
 
@@ -293,6 +310,7 @@ impl PumpFunParser {
                             token_amount,
                             sol_amount,
                             timestamp: 0,
+                            pool: None,
                         });
                     } else {
                         if filter == "pumpfun_new" {
@@ -312,6 +330,7 @@ impl PumpFunParser {
                             token_amount,
                             sol_amount,
                             timestamp: 0,
+                            pool: None,
                         });
                     }
                     
@@ -369,11 +388,73 @@ impl PumpFunParser {
                     token_amount,
                     sol_amount,
                     timestamp: 0,
+                            pool: None,
                 });
             }
 
+            if *program_id == *PUMP_SWAP_PROGRAM_ID {
+                if filter == "axiom" || filter == "pumpfun" || filter == "pumpfun_new" {
+                    continue;
+                }
+
+                let discriminator: [u8; 8] = match data[..8].try_into() {
+                    Ok(d) => d,
+                    Err(_) => continue,
+                };
+                if let Some((trade_type, token_amount, sol_amount)) =
+                    Self::parse_pump_swap_args(discriminator, data)
+                {
+                    if trade_type == TradeType::PumpSwapCreatePool 
+                        || trade_type == TradeType::PumpSwapCreate
+                    {
+                        if filter == "pumpswap_new" || filter == "pumpswap_trades" {
+                            if filter == "pumpswap_trades" {
+                                continue;
+                            }
+                        }
+
+                        let signer = account_keys.get(0)?.to_string();
+                        let mint = Self::resolve_pump_swap_mint(&account_keys, instruction, 3, 4)?;
+                        let pool = Self::resolve_mint(&account_keys, instruction, 0);
+
+                        return Some(ParsedTransaction {
+                            slot: 0,
+                            signature,
+                            mint,
+                            signer,
+                            trade_type,
+                            origin: Origin::PumpSwap,
+                            token_amount,
+                            sol_amount,
+                            timestamp: 0,
+                            pool,
+                        });
+                    } else {
+                        if filter == "pumpswap_new" {
+                            continue;
+                        }
+
+                        let signer = account_keys.get(0)?.to_string();
+                        let mint = Self::resolve_pump_swap_mint(&account_keys, instruction, 3, 4)?;
+
+                        return Some(ParsedTransaction {
+                            slot: 0,
+                            signature,
+                            mint,
+                            signer,
+                            trade_type,
+                            origin: Origin::PumpSwap,
+                            token_amount,
+                            sol_amount,
+                            timestamp: 0,
+                            pool: None,
+                        });
+                    }
+                }
+            }
+
             if *program_id == *AXIOM_PROGRAM_ID {
-                if filter == "pumpfun" || filter == "pumpfun_new" {
+                if filter == "pumpfun" || filter == "pumpfun_new" || filter == "pumpswap" || filter == "pumpswap_new" {
                     continue;
                 }
 
@@ -424,6 +505,7 @@ impl PumpFunParser {
                         token_amount,
                         sol_amount,
                         timestamp: 0,
+                        pool: None,
                     });
                 }
             }
@@ -473,8 +555,60 @@ impl PumpFunParser {
             return Some((TradeType::PumpfunBuyExactIn, token_amount, sol_amount, 1));
         }
 
+        // if discriminator == PUMP_CREATE_DISCRIMINATOR || discriminator == PUMP_CREATE_V2_DISCRIMINATOR {
+        //     return Some((TradeType::PumpfunCreate, 0, 0));
+        // }
+
+        None
+    }
+
+    fn parse_pump_swap_args(discriminator: [u8; 8], data: &[u8]) -> Option<(TradeType, u64, u64)> {
+        if data.len() < 24 {
+            return None;
+        }
+
+        if discriminator == PUMP_BUY_DISCRIMINATOR {
+            let token_amount = u64::from_le_bytes(data[8..16].try_into().unwrap());
+            let sol_amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+            return Some((TradeType::PumpSwapBuy, token_amount, sol_amount));
+        }
+
+        if discriminator == PUMP_BUY_V2_DISCRIMINATOR {
+            let token_amount = u64::from_le_bytes(data[8..16].try_into().unwrap());
+            let sol_amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+            return Some((TradeType::PumpSwapBuy, token_amount, sol_amount));
+        }
+
+        if discriminator == PUMP_SELL_DISCRIMINATOR {
+            let token_amount = u64::from_le_bytes(data[8..16].try_into().unwrap());
+            let sol_amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+            return Some((TradeType::PumpSwapSell, token_amount, sol_amount));
+        }
+
+        if discriminator == PUMP_SELL_V2_DISCRIMINATOR {
+            let token_amount = u64::from_le_bytes(data[8..16].try_into().unwrap());
+            let sol_amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+            return Some((TradeType::PumpSwapSell, token_amount, sol_amount));
+        }
+
+        if discriminator == PUMP_SWAP_CREATE_POOL_DISCRIMINATOR {
+            return Some((TradeType::PumpSwapCreatePool, 0, 0));
+        }
+
         if discriminator == PUMP_CREATE_DISCRIMINATOR || discriminator == PUMP_CREATE_V2_DISCRIMINATOR {
-            return Some((TradeType::PumpfunCreate, 0, 0, 0));
+            return Some((TradeType::PumpSwapCreate, 0, 0));
+        }
+
+        if discriminator == PUMP_EXACT_IN_DISCRIMINATOR {
+            let sol_amount = u64::from_le_bytes(data[8..16].try_into().unwrap());
+            let token_amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+            return Some((TradeType::PumpSwapBuyExactIn, token_amount, sol_amount));
+        }
+
+        if discriminator == PUMP_EXACT_QUOTE_IN_DISCRIMINATOR {
+            let sol_amount = u64::from_le_bytes(data[8..16].try_into().unwrap());
+            let token_amount = u64::from_le_bytes(data[16..24].try_into().unwrap());
+            return Some((TradeType::PumpSwapBuyExactIn, token_amount, sol_amount));
         }
 
         None
@@ -540,6 +674,35 @@ impl PumpFunParser {
             }
         }
         None
+    }
+
+    fn resolve_pump_swap_mint(
+        account_keys: &[Pubkey],
+        instruction: &solana_sdk::instruction::CompiledInstruction,
+        index_a: usize,
+        index_b: usize,
+    ) -> Option<String> {
+        let mint_a = Self::resolve_mint(account_keys, instruction, index_a);
+        let mint_b = Self::resolve_mint(account_keys, instruction, index_b);
+
+        let wsol = Pubkey::from_str("So11111111111111111111111111111111111111112").ok()?;
+
+        match (mint_a, mint_b) {
+            (Some(a), Some(b)) => {
+                let a_is_wsol = a == wsol.to_string();
+                let b_is_wsol = b == wsol.to_string();
+                if a_is_wsol && !b_is_wsol {
+                    Some(b)
+                } else if !a_is_wsol && b_is_wsol {
+                    Some(a)
+                } else {
+                    Some(a)
+                }
+            }
+            (Some(a), None) => Some(a),
+            (None, Some(b)) => Some(b),
+            (None, None) => None,
+        }
     }
 
     fn looks_like_sol(v: u64) -> bool {

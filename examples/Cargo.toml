@@ -8,7 +8,15 @@ bincode = { workspace = true }
 sol-protos = { path = "../sol_protos" }
 solana-entry = { workspace = true }
 tokio = { version = "1", features = ["full"] }
+tonic = { workspace = true }
+tower = { version = "0.5" }
+hyper-util = { version = "0.1" }
+chrono = { version = "0.4" }
 
 [[example]]
 name = "deshred"
 path = "deshred.rs"
+
+[[example]]
+name = "pumpswap_listener"
+path = "pumpswap_listener.rs"

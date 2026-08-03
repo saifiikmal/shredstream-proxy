@@ -53,7 +53,7 @@ message SubscribeEntriesRequest {
 }
 
 message SubscribeParsedRequest {
-  string filter = 1;  // "all", "pumpfun", "pumpfun_new", "axiom"
+  string filter = 1;  // "all", "pumpfun", "pumpfun_new", "pumpswap", "pumpswap_new", "axiom"
 }
 
 enum TradeType {
@@ -64,12 +64,18 @@ enum TradeType {
   TRADE_TYPE_AXIOM_BUY = 4;
   TRADE_TYPE_AXIOM_SELL = 5;
   TRADE_TYPE_PUMPFUN_CREATE = 6;
+  TRADE_TYPE_PUMP_SWAP_BUY = 9;
+  TRADE_TYPE_PUMP_SWAP_SELL = 10;
+  TRADE_TYPE_PUMP_SWAP_CREATE_POOL = 11;
+  TRADE_TYPE_PUMP_SWAP_BUY_EXACT_IN = 12;
+  TRADE_TYPE_PUMP_SWAP_CREATE = 13;
 }
 
 enum Origin {
   ORIGIN_UNSPECIFIED = 0;
   ORIGIN_PUMPFUN = 1;
   ORIGIN_AXIOM = 2;
+  ORIGIN_PUMP_SWAP = 3;
 }
 
 message ParsedTransaction {
@@ -82,6 +88,7 @@ message ParsedTransaction {
   uint64 token_amount = 7;
   uint64 sol_amount = 8;
   uint64 timestamp = 9;
+  string pool = 10;
 }
 
 message Entry {

@@ -1642,9 +1642,13 @@ name = "examples"
 version = "0.0.0"
 dependencies = [
  "bincode",
+ "chrono",
+ "hyper-util",
  "sol-protos",
  "solana-entry 2.2.1",
  "tokio",
+ "tonic 0.13.1",
+ "tower 0.5.2",
 ]
 
 [[package]]
